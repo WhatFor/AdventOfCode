@@ -1,6 +1,18 @@
 use std::io::{BufRead, BufReader};
 use anyhow::Result;
 
+pub fn find_similarity() -> Result<u32> {
+    let (left, right)= read_input("./input")?;
+    let mut sum: u32 = 0;
+
+    for item in left {
+        let count = right.iter().filter(|i| **i == item).count();
+        sum += item * count as u32;
+    }
+
+    Ok(sum)
+}
+
 pub fn find_distance() -> Result<u32> {
     let (left, right)= read_input("./input")?;
     let mut sum: u32 = 0;
