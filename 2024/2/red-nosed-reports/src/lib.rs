@@ -11,7 +11,7 @@ pub fn count_safe_reports() -> Result<u16> {
     for row in input {
         let safety = is_safe(&row);
 
-        if safety.is_ok() {
+        if safety {
             count += 1;
         }
     }
@@ -27,33 +27,14 @@ pub fn count_safe_reports_with_dampener() -> Result<u16> {
         let safety = is_safe(&row);
 
         match safety {
-            Ok(_) => count += 1,
-            Err(e) => {
-                // let mut reattempt_row = row.clone();
-                // reattempt_row.remove(e.unsafe_index + 1);
-                // let reattempt = is_safe(&reattempt_row);
-
-                // if reattempt.is_ok() {
-                //     count += 1;
-                // }
-
-                // let mut final_reattempt_row = row.clone();
-                // println!("Trying... {:?}", final_reattempt_row);
-                // final_reattempt_row.remove(e.unsafe_index);
-                // println!("Trimmed... {:?}", final_reattempt_row);
-                // let final_reattempt = is_safe(&final_reattempt_row);
-                // println!("Result... {:?}", final_reattempt.is_ok());
-
-                // if final_reattempt.is_ok() {
-                //     count += 1;
-                // }
-
+            true => count += 1,
+            false => {
                 for i in 0..row.len() {
                     let mut c = row.clone();
                     c.remove(i);
                     let is_safe = is_safe(&c);
                     
-                    if is_safe.is_ok() { 
+                    if is_safe { 
                         count+= 1;
                         break;
                     }
@@ -65,9 +46,7 @@ pub fn count_safe_reports_with_dampener() -> Result<u16> {
     Ok(count)
 }
 
-struct SafetyError { unsafe_index: usize }
-
-fn is_safe(vec: &[i8]) -> Result<(), SafetyError> {
+fn is_safe(vec: &[i8]) -> bool {
         let mut direction = Direction::Unknown;
 
         for (index, current) in vec.iter().enumerate() {
@@ -77,13 +56,12 @@ fn is_safe(vec: &[i8]) -> Result<(), SafetyError> {
             }
 
             let next = vec[index + 1];
-
             let diff = current - next;
             let abs = diff.abs();
 
-            if !(1..4).contains(&abs) {
+            if abs == 0 || abs > 3 {
                 // We have moved too little or too much
-                return Err(SafetyError { unsafe_index: index })
+                return false;
             }
 
             let current_direction = match diff {
@@ -92,18 +70,19 @@ fn is_safe(vec: &[i8]) -> Result<(), SafetyError> {
                 _ => Direction::Unknown,
             };
 
-            if direction == Direction::Unknown {
-                // We haven't observed a direction yet
-                direction = current_direction;
-            } else {
-                // We have a direction... are we on path?
-                if current_direction != direction {
-                    return Err(SafetyError { unsafe_index: index })
+            match direction {
+                Direction::Unknown => {
+                    direction = current_direction;
+                },
+                _ => {
+                    if current_direction != direction {
+                        return false;
+                    }
                 }
             }
         }
 
-        Ok(())
+        true
 }
 
 fn read_input(path: &str) -> Result<Vec<Vec<i8>>> {
